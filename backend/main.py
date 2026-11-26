@@ -92,14 +92,18 @@ def predict(data: PassengerInput):
     input_df = pd.DataFrame([passenger])
 
     prediction = int(model.predict(input_df)[0])
-    probabilities = model.predict_proba(input_df)[0]
+    raw_probabilities = model.predict_proba(input_df)[0]
+    class_probabilities = {
+        int(class_label): float(probability)
+        for class_label, probability in zip(model.classes_, raw_probabilities)
+    }
 
     return {
         "predictedClass": (
             "Satisfied" if prediction == 1
             else "Neutral or Dissatisfied"
         ),
-        "satisfiedProbability": round(float(probabilities[1]), 4),
-        "dissatisfiedProbability": round(float(probabilities[0]), 4),
+        "satisfiedProbability": round(class_probabilities.get(1, 0.0), 4),
+        "dissatisfiedProbability": round(class_probabilities.get(0, 0.0), 4),
         "predictionCode": prediction
     }
