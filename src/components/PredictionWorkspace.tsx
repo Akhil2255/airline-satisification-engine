@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';import {
   SERVICE_RATINGS_META,
   
 } from '../data/projectData';
-import { CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RotateCcw, Loader2 } from 'lucide-react';
 
 interface ApiPredictionResult {
   predictedClass: 'Satisfied' | 'Neutral or Dissatisfied';
@@ -33,6 +33,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
   const timer = setTimeout(async () => {
     setLoading(true);
     setError('');
+    setResult(null);
 
     try {
       const response = await fetch('https://airline-satisification-engine.onrender.com/predict',  {
@@ -67,10 +68,14 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Prediction failed: HTTP ${response.status}`);
+        const details = await response.text();
+        throw new Error(`Prediction failed (HTTP ${response.status}): ${details || response.statusText}`);
       }
 
       const data: ApiPredictionResult = await response.json();
+      if (typeof data.satisfiedProbability !== 'number' || typeof data.dissatisfiedProbability !== 'number' || !data.predictedClass) {
+        throw new Error('The prediction API returned an unexpected response.');
+      }
       setResult(data);
     } catch (err) {
       setError(
@@ -348,7 +353,9 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                 Predicted Outcome · 22 Features
               </div>
               <div className="mt-2 flex items-center gap-2.5">
-                {isSatisfied ? (
+                {loading ? (
+                  <Loader2 className="w-6 h-6 text-blue-600 shrink-0 animate-spin" aria-hidden="true" />
+                ) : isSatisfied ? (
                   <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" aria-hidden="true" />
                 ) : (
                   <AlertCircle className="w-6 h-6 text-amber-600 shrink-0" aria-hidden="true" />
@@ -358,12 +365,11 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                     isSatisfied ? 'text-emerald-700' : 'text-amber-700'
                   }`}
                 >
-                  {result?.predictedClass ?? 'Waiting for prediction'}
+                  {loading ? 'Predicting…' : error ? 'Prediction unavailable' : result?.predictedClass ?? 'Waiting for prediction'}
                 </span>
               </div>
               <p className="mt-1.5 text-xs text-slate-600">
-                Target encoding: <span className="font-mono text-slate-800">{isSatisfied ? '1' : '0'}</span>{' '}
-                · XGBoost Model Prediction
+                {result ? <>Target encoding: <span className="font-mono text-slate-800">{result.predictionCode}</span>{' '}· XGBoost Model Prediction</> : 'XGBoost model prediction'}
               </p>
             </div>
 
@@ -374,14 +380,14 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
     <div className="flex items-center justify-between text-xs">
       <span className="text-slate-700 font-medium">Satisfied (1)</span>
       <span className="font-mono font-semibold text-slate-900 tabular-nums">
-        {((result?.satisfiedProbability ?? 0) * 100).toFixed(1)}%
+        {result ? `${(result.satisfiedProbability * 100).toFixed(1)}%` : '—'}
       </span>
     </div>
 
     <div className="w-full h-2.5 bg-slate-100 rounded-sm overflow-hidden">
       <div
         className="h-full bg-emerald-600 transition-all duration-150"
-        style={{ width: `${((result?.satisfiedProbability ?? 0) * 100).toFixed(1)}%` }}
+        style={{ width: `${result ? (result.satisfiedProbability * 100).toFixed(1) : 0}%` }}
       />
     </div>
   </div>
@@ -390,14 +396,14 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
     <div className="flex items-center justify-between text-xs">
       <span className="text-slate-700 font-medium">Neutral or Dissatisfied (0)</span>
       <span className="font-mono font-semibold text-slate-900 tabular-nums">
-        {((result?.dissatisfiedProbability ?? 0) * 100).toFixed(1)}%
+        {result ? `${(result.dissatisfiedProbability * 100).toFixed(1)}%` : '—'}
       </span>
     </div>
 
     <div className="w-full h-2.5 bg-slate-100 rounded-sm overflow-hidden">
       <div
         className="h-full bg-amber-600 transition-all duration-150"
-        style={{ width: `${((result?.dissatisfiedProbability ?? 0) * 100).toFixed(1)}%` }}
+        style={{ width: `${result ? (result.dissatisfiedProbability * 100).toFixed(1) : 0}%` }}
       />
     </div>
   </div>
