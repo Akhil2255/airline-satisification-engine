@@ -241,8 +241,8 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                 <input
                   id="field-distance"
                   type="number"
-                  min={30}
-                  max={5000}
+                  min={31}
+                  max={4983}
                   step={10}
                   value={features.flightDistance}
                   onChange={(e) =>
@@ -311,7 +311,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                   id="field-dep-delay"
                   type="number"
                   min={0}
-                  max={1600}
+                  max={1592}
                   value={features.departureDelayInMinutes}
                   onChange={(e) =>
                   updateField(
@@ -330,7 +330,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                   id="field-arr-delay"
                   type="number"
                   min={0}
-                  max={1600}
+                  max={1584}
                   value={features.arrivalDelayInMinutes}
                   onChange={(e) =>
                     updateField(
