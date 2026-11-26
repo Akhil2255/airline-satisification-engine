@@ -30,6 +30,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
 
   const isSatisfied = result?.predictedClass === 'Satisfied';
   useEffect(() => {
+  const controller = new AbortController();
   const timer = setTimeout(async () => {
     setLoading(true);
     setError('');
@@ -38,6 +39,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
     try {
       const response = await fetch('https://airline-satisification-engine.onrender.com/predict',  {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -78,16 +80,20 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
       }
       setResult(data);
     } catch (err) {
+      if (controller.signal.aborted) return;
       setError(
         err instanceof Error ? err.message : 'Unable to connect to prediction API.'
       );
       setResult(null);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, 500);
 
-  return () => clearTimeout(timer);
+  return () => {
+    clearTimeout(timer);
+    controller.abort();
+  };
 }, [features]);
 
   const updateField = <K extends keyof PassengerFeatures>(key: K, value: PassengerFeatures[K]) => {
@@ -183,7 +189,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                   onChange={(e) =>
                   updateField(
                     'age',
-                    e.target.value === '' ? 0 : Number(e.target.value)
+                    e.target.value === '' ? 7 : Math.max(7, Math.min(85, Number(e.target.value)))
                   )
                 }
                   className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-md text-slate-900 tabular-nums focus:border-blue-700 focus:outline-none"
@@ -248,7 +254,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                   onChange={(e) =>
                   updateField(
                     'flightDistance',
-                    e.target.value === '' ? 0 : Number(e.target.value)
+                    e.target.value === '' ? 31 : Math.max(31, Math.min(4983, Number(e.target.value)))
                   )
                 }
                   className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-md text-slate-900 tabular-nums focus:border-blue-700 focus:outline-none"
@@ -316,7 +322,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                   onChange={(e) =>
                   updateField(
                     'departureDelayInMinutes',
-                    e.target.value === '' ? 0 : Number(e.target.value)
+                    e.target.value === '' ? 0 : Math.max(0, Math.min(1592, Number(e.target.value)))
                   )
                 }
                   className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-md text-slate-900 tabular-nums focus:border-blue-700 focus:outline-none"
@@ -335,7 +341,7 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                   onChange={(e) =>
                     updateField(
                       'arrivalDelayInMinutes',
-                      Math.max(0, Math.min(1600, Number(e.target.value) || 0))
+                      Math.max(0, Math.min(1584, Number(e.target.value) || 0))
                     )
                   }
                   className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-md text-slate-900 tabular-nums focus:border-blue-700 focus:outline-none"
@@ -372,6 +378,12 @@ export const PredictionWorkspace: React.FC<PredictionWorkspaceProps> = ({
                 {result ? <>Target encoding: <span className="font-mono text-slate-800">{result.predictionCode}</span>{' '}· XGBoost Model Prediction</> : 'XGBoost model prediction'}
               </p>
             </div>
+
+{error && (
+  <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-700 break-words">
+    <strong>Prediction error:</strong> {error}
+  </div>
+)}
 
 <div className="border-t border-slate-100 pt-4 space-y-3">
   <div className="text-xs font-medium text-slate-700">Class Probabilities</div>
