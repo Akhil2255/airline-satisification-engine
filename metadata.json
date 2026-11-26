@@ -1,0 +1,6 @@
+{
+  "name": "Airline Satisfaction Engine",
+  "description": "Machine learning passenger satisfaction prediction system, model benchmark explorer, persona overview, and Streamlit deployment guide.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
